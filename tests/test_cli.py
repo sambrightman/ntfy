@@ -54,6 +54,18 @@ class TestRunCmd(TestCase):
         args.unfocused_only = False
         self.assertEqual((None, None), run_cmd(args))
 
+    @patch('ntfy.cli.is_focused')
+    @patch('ntfy.cli.Popen')
+    def test_focused(self, mock_Popen, mock_is_focused):
+        mock_Popen.return_value = process_mock()
+        mock_is_focused.return_value = True
+        args = MagicMock()
+        args.longer_than = -1
+        args.command = ['true']
+        args.pid = None
+        args.unfocused_only = True
+        self.assertEqual((None, None), run_cmd(args))
+
     @patch('ntfy.cli.Popen')
     def test_failure(self, mock_Popen):
         mock_Popen.return_value = process_mock(42)
