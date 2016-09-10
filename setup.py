@@ -16,7 +16,7 @@ extra_deps = {
     'pid':['psutil'],
     'slack':['slacker'],
 }
-test_deps = ['mock', 'sleekxmpp', 'emoji', 'psutil']
+test_deps = ['mock', 'sleekxmpp', 'emoji', 'psutil', 'testfixtures']
 
 
 setup(

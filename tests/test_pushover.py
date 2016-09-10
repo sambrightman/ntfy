@@ -1,13 +1,16 @@
 from unittest import TestCase, main
 from mock import patch
+from testfixtures import log_capture
 
-from ntfy.backends.pushover import notify
+from ntfy.backends.pushover import notify, __name__ as N
 from ntfy.config import USER_AGENT
 
 
 class TestPushover(TestCase):
+    @patch('requests.Response')
     @patch('requests.post')
-    def test_basic(self, mock_post):
+    def test_basic(self, mock_post, mock_response):
+        mock_post.return_value = mock_response
         notify('title', 'message', user_key='user_key')
         mock_post.assert_called_once_with(
             'https://api.pushover.net/1/messages.json',
@@ -16,6 +19,7 @@ class TestPushover(TestCase):
                   'token': 'aUnsraBiEZVsmrG89AZp47K3S2dX2a',
                   'title': 'title'},
             headers={'User-Agent': USER_AGENT})
+        mock_response.raise_for_status.assert_called_once()
 
     @patch('requests.post')
     def test_url_title(self, mock_post):
@@ -173,6 +177,76 @@ class TestPushover(TestCase):
                   'title': 'title',
                   'url': 'foobar'},
             headers={'User-Agent': USER_AGENT})
+
+    @patch('requests.post')
+    @log_capture()
+    def test_non_emergency_warning_retry(self, mock_post, log):
+        notify('title', 'message', user_key='user_key', retry=60)
+        mock_post.assert_called_once_with(
+            'https://api.pushover.net/1/messages.json',
+            data={'user': 'user_key',
+                  'message': 'message',
+                  'token': 'aUnsraBiEZVsmrG89AZp47K3S2dX2a',
+                  'title': 'title'},
+            headers={'User-Agent': USER_AGENT})
+        log.check(
+            (N, 'WARNING', 'Non-emergency, ignoring retry set in config')
+        )
+
+    @patch('requests.post')
+    @log_capture()
+    def test_non_emergency_warning_expire(self, mock_post, log):
+        notify('title', 'message', user_key='user_key', expire=60)
+        mock_post.assert_called_once_with(
+            'https://api.pushover.net/1/messages.json',
+            data={'user': 'user_key',
+                  'message': 'message',
+                  'token': 'aUnsraBiEZVsmrG89AZp47K3S2dX2a',
+                  'title': 'title'},
+            headers={'User-Agent': USER_AGENT})
+        log.check(
+            (N, 'WARNING', 'Non-emergency, ignoring expire set in config')
+        )
+
+    @patch('requests.post')
+    @log_capture()
+    def test_non_emergency_warning_callback(self, mock_post, log):
+        notify('title',
+               'message',
+               user_key='user_key',
+               callback='http://example.com')
+        mock_post.assert_called_once_with(
+            'https://api.pushover.net/1/messages.json',
+            data={'user': 'user_key',
+                  'message': 'message',
+                  'token': 'aUnsraBiEZVsmrG89AZp47K3S2dX2a',
+                  'title': 'title'},
+            headers={'User-Agent': USER_AGENT})
+        log.check(
+            (N, 'WARNING', 'Non-emergency, ignoring callback set in config')
+        )
+
+    @patch('requests.post')
+    @log_capture()
+    def test_non_emergency_warnings(self, mock_post, log):
+        notify('title',
+               'message',
+               user_key='user_key',
+               retry=60,
+               expire=60,
+               callback='http://example.com')
+        mock_post.assert_called_once_with(
+            'https://api.pushover.net/1/messages.json',
+            data={'user': 'user_key',
+                  'message': 'message',
+                  'token': 'aUnsraBiEZVsmrG89AZp47K3S2dX2a',
+                  'title': 'title'},
+            headers={'User-Agent': USER_AGENT})
+        log.check(
+            (N, 'WARNING', 'Non-emergency, ignoring retry set in config'),
+            (N, 'WARNING', 'Non-emergency, ignoring expire set in config'),
+            (N, 'WARNING', 'Non-emergency, ignoring callback set in config'),
+        )
 
 
 if __name__ == '__main__':

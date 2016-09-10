@@ -80,11 +80,11 @@ def notify(title,
             # Expire can not be more than 86400 (24 hours)
             if not expire or expire > 86400:
                 logging.getLogger(__name__).error(
-                    'expire is greater than 86400 seconds or is not set,'
+                    'expire is greater than 86400 seconds or is not set, '
                     'setting expire to 86400 to comply with'
                     'pushover API requirements')
                 data['expire'] = 86400
-            elif expire <= 86400:
+            else:
                 data['expire'] = expire
 
             if callback:
