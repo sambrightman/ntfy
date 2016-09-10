@@ -32,6 +32,15 @@ class TestLoadConfig(TestCase):
         self.assertIn('backends', config)
         self.assertEqual(config['backends'], ['foobar'])
 
+    @patch(builtin_module + '.open', mock_open())
+    @patch('ntfy.config.yaml.load')
+    def test_backwards_compat_lower_priority(self, mock_yamlload):
+        mock_yamlload.return_value = {'backend': 'foobar',
+                                      'backends': ['foobaz']}
+        config = load_config(DEFAULT_CONFIG)
+        self.assertIn('backends', config)
+        self.assertEqual(config['backends'], ['foobaz'])
+
     @skipIf(
         environ.get('CI') and py_ in [(3, 3), (3, 4)],
         'Python 3.3 and 3.4 fail in TravisCI, but 3.4 works on Ubuntu 14.04')
