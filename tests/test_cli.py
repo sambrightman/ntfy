@@ -1,7 +1,9 @@
 from time import time
+from re import escape
 from unittest import TestCase, main
-
 from mock import patch, MagicMock, Mock
+from mock import patch, MagicMock
+from testfixtures import OutputCapture, StringComparison, compare
 
 from ntfy.cli import run_cmd, auto_done
 from ntfy.cli import main as ntfy_main
@@ -162,9 +164,45 @@ class TestMain(TestCase):
 
 class ShellIntegrationTestCase(TestCase):
     def test_shellintegration_printout(self):
-        # not mocking print to check calls because test runner uses print...
         args = MagicMock()
-        auto_done(args)
+        args.longer_than = 1
+        with OutputCapture() as output:
+            auto_done(args)
+        compare(StringComparison('\n'.join([
+            escape("export AUTO_NTFY_DONE_LONGER_THAN=-L1"),
+            escape("export AUTO_NTFY_DONE_UNFOCUSED_ONLY=-b"),
+            "source '.*/auto-ntfy-done.sh'",
+            escape("# To use ntfy's shell integration, run this and add it to your shell's rc file:"),  # noqa: E501
+            escape('# eval "$(ntfy shell-integration)"'),
+        ]).strip()), output.captured.strip())
+
+    def test_shellintegration_printout_bash(self):
+        args = MagicMock()
+        args.longer_than = 1
+        args.shell = "bash"
+        with OutputCapture() as output:
+            auto_done(args)
+        compare(StringComparison('\n'.join([
+            escape("export AUTO_NTFY_DONE_LONGER_THAN=-L1"),
+            escape("export AUTO_NTFY_DONE_UNFOCUSED_ONLY=-b"),
+            "source '.*/bash-preexec.sh'",
+            "source '.*/auto-ntfy-done.sh'",
+            escape("# To use ntfy's shell integration, run this and add it to your shell's rc file:"),  # noqa: E501
+            escape('# eval "$(ntfy shell-integration)"'),
+        ]).strip()), output.captured.strip())
+
+    def test_shellintegration_printout_focused(self):
+        args = MagicMock()
+        args.longer_than = 1
+        args.unfocused_only = False
+        with OutputCapture() as output:
+            auto_done(args)
+        compare(StringComparison('\n'.join([
+            escape("export AUTO_NTFY_DONE_LONGER_THAN=-L1"),
+            "source '.*/auto-ntfy-done.sh'",
+            escape("# To use ntfy's shell integration, run this and add it to your shell's rc file:"),  # noqa: E501
+            escape('# eval "$(ntfy shell-integration)"'),
+        ]).strip()), output.captured.strip())
 
 
 class TestWatchPID(TestCase):
