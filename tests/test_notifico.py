@@ -41,5 +41,3 @@ class TestNotifico(TestCase):
 
 if __name__ == '__main__':
     main()
-
-

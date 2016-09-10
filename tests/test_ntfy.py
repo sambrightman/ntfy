@@ -5,10 +5,11 @@ from mock import patch
 from ntfy import notify
 import ntfy
 
-class DummyModule:
 
+class DummyModule:
     def notify(message, title, retcode=None):
         raise Exception
+
 
 class OverrideBackendTestCase(TestCase):
     @patch('requests.post')

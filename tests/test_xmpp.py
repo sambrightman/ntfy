@@ -2,7 +2,6 @@ from unittest import TestCase
 from mock import patch, MagicMock
 
 from ntfy.backends.xmpp import notify, NtfySendMsgBot
-from ntfy.config import USER_AGENT
 
 
 class NtfySendMsgBotTestCase(TestCase):
@@ -34,6 +33,7 @@ class NtfySendMsgBotTestCase(TestCase):
         bot.start(MagicMock)
         mock_send_message.assert_called_with(mbody='message', msubject='title',
                                              mto='bar@foo', mtype='chat')
+
 
 class XMPPTestCase(TestCase):
     @patch('os.path.isdir')

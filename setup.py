@@ -13,8 +13,8 @@ extra_deps = {
     'telegram': ['telegram-send'],
     'instapush': ['instapush'],
     'emoji': ['emoji'],
-    'pid':['psutil'],
-    'slack':['slacker'],
+    'pid': ['psutil'],
+    'slack': ['slacker'],
 }
 test_deps = ['mock', 'sleekxmpp', 'emoji', 'psutil', 'testfixtures']
 

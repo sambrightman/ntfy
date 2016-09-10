@@ -1,6 +1,6 @@
 from errno import ENOENT
 from os import environ
-from unittest import TestCase, main, skipIf
+from unittest import TestCase, skipIf
 from sys import version_info
 
 from mock import patch, mock_open
