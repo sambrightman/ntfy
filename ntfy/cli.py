@@ -199,7 +199,7 @@ if emojize is not None:
 parser.add_argument('-t',
                     '--title',
                     help='a title for the notification (default: {})'
-                    .format(default_title))
+                    .format(default_title()))
 
 subparsers = parser.add_subparsers()
 

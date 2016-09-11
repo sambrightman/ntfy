@@ -1,12 +1,10 @@
 from unittest import TestCase, main
 from sys import version_info, modules
-
-from mock import patch, mock_open, MagicMock
+from mock import patch, mock_open, MagicMock, ANY
 
 from ntfy.cli import main as ntfy_main
 
 py = version_info.major
-
 builtin_module = '__builtin__' if py == 2 else 'builtins'
 
 
@@ -145,6 +143,78 @@ class TestIntegration(TestCase):
             }
         }
         ntfy_main(['send', 'ms'])
+
+    @patch(builtin_module + '.open', mock_open())
+    @patch('ntfy.config.yaml.load')
+    @patch('ntfy.backends.pushover.requests.post')
+    def test_title_config(self, mock_post, mock_yamlload):
+        mock_yamlload.return_value = {
+            'title': 'title1',
+            'backends': ['pushover'],
+            'pushover': {'user_key': MagicMock()},
+        }
+        ret = ntfy_main(['send', 'message'])
+        self.assertEqual(0, ret)
+        mock_post.assert_called_once_with(
+            ANY,
+            data={
+                'user': ANY,
+                'message': 'message',
+                'token': ANY,
+                'title': 'title1',
+            },
+            headers=ANY,
+        )
+
+    @patch(builtin_module + '.open', mock_open())
+    @patch('ntfy.config.yaml.load')
+    @patch('ntfy.backends.pushover.requests.post')
+    def test_title_config_override_from_backend(self,
+                                                mock_post,
+                                                mock_yamlload):
+        mock_yamlload.return_value = {
+            'title': 'title1',
+            'backends': ['pushover'],
+            'pushover': {'title': 'title2',
+                         'user_key': MagicMock()},
+        }
+        ret = ntfy_main(['send', 'message'])
+        self.assertEqual(0, ret)
+        mock_post.assert_called_once_with(
+            ANY,
+            data={
+                'user': ANY,
+                'message': 'message',
+                'token': ANY,
+                'title': 'title2',
+            },
+            headers=ANY,
+        )
+
+    @patch(builtin_module + '.open', mock_open())
+    @patch('ntfy.config.yaml.load')
+    @patch('ntfy.backends.pushover.requests.post')
+    def test_title_config_override_from_command_line(self,
+                                                     mock_post,
+                                                     mock_yamlload):
+        mock_yamlload.return_value = {
+            'title': 'title1',
+            'backends': ['pushover'],
+            'pushover': {'title': 'title2',
+                         'user_key': MagicMock()},
+        }
+        ret = ntfy_main(['-t', 'title3', 'send', 'message'])
+        self.assertEqual(0, ret)
+        mock_post.assert_called_once_with(
+            ANY,
+            data={
+                'user': ANY,
+                'message': 'message',
+                'token': ANY,
+                'title': 'title3',
+            },
+            headers=ANY,
+        )
 
 if __name__ == '__main__':
     main()

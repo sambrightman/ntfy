@@ -6,29 +6,32 @@ from importlib import import_module
 from inspect import getargspec
 from .backends.default import DefaultNotifierError
 
+
 __version__ = '2.2.0'
-
-
-notifiers = dict.fromkeys(['default', 'darwin', 'linux', 'notifico',
+NOTIFIERS = dict.fromkeys(['default', 'darwin', 'linux', 'notifico',
                            'pushbullet', 'pushjet', 'pushover', 'prowl',
                            'simplepush', 'telegram', 'win32', 'xmpp',
                            'slack', 'insta'])
 
-_user_home = path.expanduser('~')
-_cwd = getcwd()
-if name != 'nt' and _cwd.startswith(_user_home):
-    default_title = '{}@{}:{}'.format(getuser(), gethostname(),
-                                      path.join('~', _cwd[len(_user_home):]))
-else:
-    default_title = '{}@{}:{}'.format(getuser(), gethostname(), _cwd)
+
+def notifier_modules(notifiers):
+    for k in notifiers.keys():
+        try:
+            module = import_module('ntfy.backends.{}'.format(k))
+            notifiers[k] = module
+        except (ImportError, OSError):
+            continue
+    return notifiers
 
 
-for k, v in notifiers.items():
-    try:
-        module = import_module('ntfy.backends.{}'.format(k))
-        notifiers[k] = module
-    except (ImportError, OSError):
-        continue
+def default_title():
+    _user_home = path.expanduser('~')
+    _cwd = getcwd()
+    if name != 'nt' and _cwd.startswith(_user_home):
+        return '{}@{}:{}'.format(getuser(), gethostname(),
+                                 path.join('~', _cwd[len(_user_home):]))
+    else:
+        return '{}@{}:{}'.format(getuser(), gethostname(), _cwd)
 
 
 def notify(message, title, config=None, **kwargs):
@@ -48,12 +51,12 @@ def notify(message, title, config=None, **kwargs):
 
         if title is None:
             title = backend_config.pop('title', config.get('title',
-                                                           default_title))
+                                                           default_title()))
         elif 'title' in backend_config:
             del backend_config['title']
 
         notifier = None
-        notifier = notifiers.get(backend)
+        notifier = notifier_modules(NOTIFIERS).get(backend)
         if notifier is None:
             logging.getLogger(__name__).error(
                 'Invalid backend {}'.format(backend))
