@@ -54,26 +54,14 @@ class TestIntegration(TestCase):
         ret = ntfy_main(['send', 'foobar'])
         self.assertEqual(0, ret)
 
-    @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.backends.default.platform', 'linux')
+    @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
     def test_default(self, mock_yamlload):
         with mock_modules('dbus'):
             mock_yamlload.return_value = {'backends': ['default']}
             ret = ntfy_main(['send', 'foobar'])
             self.assertEqual(0, ret)
-
-    @patch(builtin_module + '.open', mock_open())
-    @patch('ntfy.backends.default.platform', 'foobar')
-    @patch('ntfy.config.yaml.load')
-    @log_capture()
-    def test_default_unsupported_platform(self, mock_yamlload, log):
-        mock_yamlload.return_value = {'backends': ['default']}
-        ret = ntfy_main(['send', 'foobar'])
-        self.assertEqual(0, ret)
-        log.check(
-            ('ntfy.backends.default', 'ERROR', 'Unsupported platform foobar')
-        )
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
