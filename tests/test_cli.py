@@ -171,6 +171,11 @@ class TestMain(TestCase):
                                             foo='bar',
                                             retcode=0)
 
+    @patch('argparse.ArgumentParser.print_usage')
+    def test_func_required_usage(self, mock_usage):
+        self.assertRaises(SystemExit, ntfy_main, [])
+        mock_usage.assert_called_once()
+
 
 class ShellIntegrationTestCase(TestCase):
     def test_shellintegration_printout(self):

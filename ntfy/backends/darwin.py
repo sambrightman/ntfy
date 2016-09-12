@@ -23,8 +23,7 @@ def notify(title, message, retcode=None):
 
     notification = NSUserNotification.alloc().init()
     notification.setTitle_(title)
-    if message is not None:
-        notification.setInformativeText_(message)
+    notification.setInformativeText_(message)
     notification.setDeliveryDate_(Foundation.NSDate.date())
 
     NSUserNotificationCenter.defaultUserNotificationCenter()\

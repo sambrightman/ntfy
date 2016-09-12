@@ -181,5 +181,17 @@ class TestIntegration(TestCase):
             headers=ANY,
         )
 
+    @patch('ntfy.cli.load_config', return_value={})
+    @patch('ntfy.backends.default.notify')
+    @patch('argparse.ArgumentParser.parse_args')
+    def test_message_none_skipped(self, mock_args, mock_notify, mock_loader):
+        mock_args.return_value.log_level = 'WARNING'
+        mock_args.return_value.func.return_value = (None, 0)
+        ret = ntfy_main()
+        self.assertEqual(0, ret)
+        mock_args.return_value.func.assert_called_once()
+        mock_notify.assert_not_called()
+
+
 if __name__ == '__main__':
     main()

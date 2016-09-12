@@ -332,20 +332,18 @@ def main(cli_args=None):
         if backend is not None:
             config.setdefault(backend, {}).update(backend_options)
 
-    if getattr(args, 'func', None) == run_cmd and args.longer_than is None and\
-            'longer_than' in config:
+    if (args.func == run_cmd
+            and args.longer_than is None
+            and 'longer_than' in config):
         args.longer_than = config['longer_than']
 
-    if hasattr(args, 'func'):
-        message, retcode = args.func(args)
-        if message is None:
-            return 0
-        if emojize is not None and not args.no_emoji:
-            message = emojize(message, use_aliases=True)
-        return notify(message, args.title, config, retcode=retcode,
-                      **dict(args.option.get(None, [])))
-    else:
-        parser.print_help()
+    message, retcode = args.func(args)
+    if message is None:
+        return 0
+    if emojize is not None and not args.no_emoji:
+        message = emojize(message, use_aliases=True)
+    return notify(message, args.title, config, retcode=retcode,
+                  **dict(args.option.get(None, [])))
 
 
 if __name__ == '__main__':
