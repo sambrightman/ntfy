@@ -1,5 +1,7 @@
+import logging
 from unittest import TestCase
 from mock import patch, MagicMock
+from testfixtures import log_capture
 
 from ntfy.backends.xmpp import notify, NtfySendMsgBot
 
@@ -33,6 +35,16 @@ class NtfySendMsgBotTestCase(TestCase):
         bot.start(MagicMock)
         mock_send_message.assert_called_with(mbody='message', msubject='title',
                                              mto='bar@foo', mtype='chat')
+
+    @patch('sleekxmpp.ClientXMPP.process')
+    @patch('sleekxmpp.ClientXMPP.connect', return_value=False)
+    @log_capture(level=logging.WARN)
+    def test_failure(self, mock_connect, mock_process, log):
+        notify('title', 'message', 'foo@bar', 'hunter2', 'bar@foo')
+        mock_connect.assert_called_once()
+        mock_process.assert_not_called()
+        log.check(('ntfy.backends.xmpp', 'ERROR', 'Unable to connect'))
+        self.assertIsNotNone(log.records[-1].exc_info)
 
 
 class XMPPTestCase(TestCase):
