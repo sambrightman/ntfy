@@ -1,7 +1,8 @@
 from unittest import TestCase, main
-from sys import version_info, modules
+from sys import version_info
 from mock import patch, mock_open, MagicMock, ANY
 
+from .util import mock_modules
 from ntfy.cli import main as ntfy_main
 
 py = version_info.major
@@ -53,66 +54,30 @@ class TestIntegration(TestCase):
     @patch('ntfy.backends.default.platform', 'linux')
     @patch('ntfy.config.yaml.load')
     def test_default(self, mock_yamlload):
-        old_dbus = modules.get('dbus')
-        modules['dbus'] = MagicMock()
-        try:
+        with mock_modules('dbus'):
             mock_yamlload.return_value = {'backends': ['default'], }
             self.assertEqual(0, ntfy_main(['send', 'foobar']))
-        finally:
-            if old_dbus is not None:
-                modules['dbus'] = old_dbus
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
     def test_linux(self, mock_yamlload):
-        old_dbus = modules.get('dbus')
-        modules['dbus'] = MagicMock()
-        try:
+        with mock_modules('dbus'):
             mock_yamlload.return_value = {'backends': ['linux'], }
             self.assertEqual(0, ntfy_main(['send', 'foobar']))
-        finally:
-            if old_dbus is not None:
-                modules['dbus'] = old_dbus
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
     def test_darwin(self, mock_yamlload):
-        old_foundation = modules.get('Foundation')
-        old_objc = modules.get('objc')
-        old_appkit = modules.get('AppKit')
-        modules['Foundation'] = MagicMock()
-        modules['objc'] = MagicMock()
-        modules['AppKit'] = MagicMock()
-        try:
+        with mock_modules('Foundation', 'objc', 'AppKit'):
             mock_yamlload.return_value = {'backends': ['darwin'], }
             self.assertEqual(0, ntfy_main(['send', 'foobar']))
-        finally:
-            if old_foundation is not None:
-                modules['Foundation'] = old_foundation
-            if old_objc is not None:
-                modules['objc'] = old_objc
-            if old_appkit is not None:
-                modules['AppKit'] = old_appkit
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
     def test_win32(self, mock_yamlload):
-        old_win32api = modules.get('win32api')
-        old_win32gui = modules.get('win32gui')
-        old_win32con = modules.get('win32con')
-        modules['win32api'] = MagicMock()
-        modules['win32gui'] = MagicMock()
-        modules['win32con'] = MagicMock()
-        try:
+        with mock_modules('win32api', 'win32gui', 'win32con'):
             mock_yamlload.return_value = {'backends': ['win32'], }
             self.assertEqual(0, ntfy_main(['send', 'foobar']))
-        finally:
-            if old_win32api is not None:
-                modules['win32api'] = old_win32api
-            if old_win32gui is not None:
-                modules['win32gui'] = old_win32gui
-            if old_win32con is not None:
-                modules['win32con'] = old_win32con
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
