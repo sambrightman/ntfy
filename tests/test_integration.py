@@ -18,7 +18,8 @@ class TestIntegration(TestCase):
             'backends': ['pushover'],
             'pushover': {'user_key': MagicMock()},
         }
-        self.assertEqual(0, ntfy_main(['send', 'foobar']))
+        ret = ntfy_main(['send', 'foobar'])
+        self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
@@ -26,9 +27,10 @@ class TestIntegration(TestCase):
     def test_prowl(self, mock_post, mock_yamlload):
         mock_yamlload.return_value = {
             'backends': ['prowl'],
-            'prowl': {'apikey': MagicMock()},
+            'prowl': {'api_key': MagicMock()},
         }
-        ntfy_main(['send', 'foobar'])
+        ret = ntfy_main(['send', 'foobar'])
+        self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
@@ -38,7 +40,8 @@ class TestIntegration(TestCase):
             'backends': ['pushbullet'],
             'pushbullet': {'access_token': MagicMock()},
         }
-        self.assertEqual(0, ntfy_main(['send', 'foobar']))
+        ret = ntfy_main(['send', 'foobar'])
+        self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
@@ -48,46 +51,68 @@ class TestIntegration(TestCase):
             'backends': ['simplepush'],
             'simplepush': {'key': MagicMock()},
         }
-        self.assertEqual(0, ntfy_main(['send', 'foobar']))
+        ret = ntfy_main(['send', 'foobar'])
+        self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.backends.default.platform', 'linux')
     @patch('ntfy.config.yaml.load')
     def test_default(self, mock_yamlload):
         with mock_modules('dbus'):
-            mock_yamlload.return_value = {'backends': ['default'], }
-            self.assertEqual(0, ntfy_main(['send', 'foobar']))
+            mock_yamlload.return_value = {'backends': ['default']}
+            ret = ntfy_main(['send', 'foobar'])
+            self.assertEqual(0, ret)
+
+    @patch(builtin_module + '.open', mock_open())
+    @patch('ntfy.backends.default.platform', 'foobar')
+    @patch('ntfy.config.yaml.load')
+    @log_capture()
+    def test_default_unsupported_platform(self, mock_yamlload, log):
+        mock_yamlload.return_value = {'backends': ['default']}
+        ret = ntfy_main(['send', 'foobar'])
+        self.assertEqual(0, ret)
+        log.check(
+            ('ntfy.backends.default', 'ERROR', 'Unsupported platform foobar')
+        )
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
     def test_linux(self, mock_yamlload):
         with mock_modules('dbus'):
-            mock_yamlload.return_value = {'backends': ['linux'], }
-            self.assertEqual(0, ntfy_main(['send', 'foobar']))
+            mock_yamlload.return_value = {'backends': ['linux']}
+            ret = ntfy_main(['send', 'foobar'])
+            self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
     def test_darwin(self, mock_yamlload):
         with mock_modules('Foundation', 'objc', 'AppKit'):
-            mock_yamlload.return_value = {'backends': ['darwin'], }
-            self.assertEqual(0, ntfy_main(['send', 'foobar']))
+            mock_yamlload.return_value = {'backends': ['darwin']}
+            ret = ntfy_main(['send', 'foobar'])
+            self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
     def test_win32(self, mock_yamlload):
         with mock_modules('win32api', 'win32gui', 'win32con'):
             mock_yamlload.return_value = {'backends': ['win32'], }
-            self.assertEqual(0, ntfy_main(['send', 'foobar']))
+            ret = ntfy_main(['send', 'foobar'])
+            self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
     @patch('ntfy.backends.xmpp.NtfySendMsgBot')
     def test_xmpp(self, mock_bot, mock_yamlload):
-        mock_yamlload.return_value = {'backends': ['xmpp'],
-                                      'xmpp': {'jid': 'foo@bar',
-                                               'password': 'hunter2',
-                                               'recipient': 'bar@foo'}}
-        self.assertEqual(0, ntfy_main(['send', 'foobar']))
+        mock_yamlload.return_value = {
+            'backends': ['xmpp'],
+            'xmpp': {
+                'jid': 'foo@bar',
+                'password': 'hunter2',
+                'recipient': 'bar@foo'
+            }
+        }
+        ret = ntfy_main(['send', 'foobar'])
+        self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')

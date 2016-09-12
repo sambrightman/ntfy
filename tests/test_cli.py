@@ -25,8 +25,8 @@ class TestRunCmd(TestCase):
         args.command = ['true']
         args.pid = None
         args.unfocused_only = False
-        self.assertEqual(('"true" succeeded in 0:00 minutes', 0),
-                         run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual(('"true" succeeded in 0:00 minutes', 0), ret)
 
     @patch('ntfy.cli.Popen')
     def test_emoji(self, mock_Popen):
@@ -37,8 +37,9 @@ class TestRunCmd(TestCase):
         args.pid = None
         args.no_emoji = False
         args.unfocused_only = False
+        ret = run_cmd(args)
         expected = (':white_check_mark: "true" succeeded in 0:00 minutes', 0)
-        self.assertEqual(expected, run_cmd(args))
+        self.assertEqual(expected, ret)
 
     def tests_usage(self):
         args = MagicMock()
@@ -55,7 +56,8 @@ class TestRunCmd(TestCase):
         args.command = ['true']
         args.pid = None
         args.unfocused_only = False
-        self.assertEqual((None, None), run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual((None, None), ret)
 
     @patch('ntfy.cli.is_focused')
     @patch('ntfy.cli.Popen')
@@ -67,7 +69,8 @@ class TestRunCmd(TestCase):
         args.command = ['true']
         args.pid = None
         args.unfocused_only = True
-        self.assertEqual((None, None), run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual((None, None), ret)
 
     @patch('ntfy.cli.Popen')
     def test_failure(self, mock_Popen):
@@ -77,8 +80,8 @@ class TestRunCmd(TestCase):
         args.command = ['false']
         args.pid = None
         args.unfocused_only = False
-        self.assertEqual(('"false" failed (code 42) in 0:00 minutes', 42),
-                         run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual(('"false" failed (code 42) in 0:00 minutes', 42), ret)
 
     @patch('ntfy.cli.Popen')
     def test_stdout(self, mock_Popen):
@@ -91,8 +94,8 @@ class TestRunCmd(TestCase):
         # not actually used
         args.stdout = True
         args.stderr = False
-        self.assertEqual(('"true" succeeded in 0:00 minutes:\noutput', 0),
-                         run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual(('"true" succeeded in 0:00 minutes:\noutput', 0), ret)
 
     @patch('ntfy.cli.Popen')
     def test_stderr(self, mock_Popen):
@@ -105,8 +108,8 @@ class TestRunCmd(TestCase):
         # not actually used
         args.stdout = False
         args.stderr = True
-        self.assertEqual(('"true" succeeded in 0:00 minutes:\nerror', 0),
-                         run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual(('"true" succeeded in 0:00 minutes:\nerror', 0), ret)
 
     @patch('ntfy.cli.Popen')
     def test_stdout_and_stderr(self, mock_Popen):
@@ -119,8 +122,9 @@ class TestRunCmd(TestCase):
         # not actually used
         args.stdout = True
         args.stderr = True
+        ret = run_cmd(args)
         self.assertEqual(('"true" succeeded in 0:00 minutes:\noutputerror', 0),
-                         run_cmd(args))
+                         ret)
 
     @patch('ntfy.cli.Popen')
     def test_failure_stdout_and_stderr(self, mock_Popen):
@@ -136,7 +140,8 @@ class TestRunCmd(TestCase):
         args.stdout = True
         args.stderr = True
         expected = ('"true" failed (code 1) in 0:00 minutes:\noutputerror', 1)
-        self.assertEqual(expected, run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual(expected, ret)
 
     def test_formatter(self):
         args = MagicMock()
@@ -145,8 +150,8 @@ class TestRunCmd(TestCase):
         args.formatter = ("true", 0, 65)
         args.longer_than = -1
         args.unfocused_only = False
-        self.assertEqual(('"true" succeeded in 1:05 minutes', 0),
-                         run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual(('"true" succeeded in 1:05 minutes', 0), ret)
 
     def test_formatter_failure(self):
         args = MagicMock()
@@ -155,17 +160,18 @@ class TestRunCmd(TestCase):
         args.formatter = ("false", 1, 10)
         args.longer_than = -1
         args.unfocused_only = False
-        self.assertEqual(('"false" failed (code 1) in 0:10 minutes', 1),
-                         run_cmd(args))
+        ret = run_cmd(args)
+        self.assertEqual(('"false" failed (code 1) in 0:10 minutes', 1), ret)
 
 
 class TestMain(TestCase):
     @patch('ntfy.backends.default.notify')
     def test_args(self, mock_notify):
-        self.assertEquals(0, ntfy_main(['-o', 'foo', 'bar',
-                                        '-b', 'default',
-                                        '-t', 'TITLE',
-                                        'send', 'test']))
+        ret = ntfy_main(['-o', 'foo', 'bar',
+                         '-b', 'default',
+                         '-t', 'TITLE',
+                         'send', 'test'])
+        self.assertEqual(0, ret)
         mock_notify.assert_called_once_with(message='test',
                                             title='TITLE',
                                             foo='bar',
@@ -229,8 +235,8 @@ class TestWatchPID(TestCase):
         args = MagicMock()
         args.pid = 1
         args.unfocused_only = False
-        self.assertEqual('PID[1]: "cmd" finished in 0:00 minutes',
-                         run_cmd(args)[0])
+        ret = run_cmd(args)
+        self.assertEqual('PID[1]: "cmd" finished in 0:00 minutes', ret[0])
 
     def test_watch_bad_pid(self):
         args = MagicMock()
