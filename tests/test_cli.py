@@ -1,5 +1,6 @@
 from time import time
 from re import escape
+from psutil import NoSuchProcess
 from unittest import TestCase, main
 from mock import patch, MagicMock, Mock
 from testfixtures import OutputCapture, StringComparison, compare
@@ -49,7 +50,7 @@ class TestRunCmd(TestCase):
         self.assertRaises(SystemExit, run_cmd, args)
 
     @patch('ntfy.cli.Popen')
-    def test_longerthan(self, mock_Popen):
+    def test_longer_than(self, mock_Popen):
         mock_Popen.return_value = process_mock()
         args = MagicMock()
         args.longer_than = 1
@@ -167,8 +168,8 @@ class TestRunCmd(TestCase):
 class TestMain(TestCase):
     @patch('ntfy.backends.default.notify')
     def test_args(self, mock_notify):
-        ret = ntfy_main(['-o', 'foo', 'bar',
-                         '-b', 'default',
+        ret = ntfy_main(['-b', 'default',
+                         '-o', 'foo', 'bar',
                          '-t', 'TITLE',
                          'send', 'test'])
         self.assertEqual(0, ret)
@@ -177,6 +178,15 @@ class TestMain(TestCase):
                                             foo='bar',
                                             retcode=0)
 
+    @patch('ntfy.cli.load_config', return_value={'longer_than': 5})
+    @patch('ntfy.backends.default.notify')
+    def test_longer_than_config(self, mock_notify, mock_config):
+        ret = ntfy_main(['-b', 'default',
+                         '-t', 'TITLE',
+                         'done', 'true'])
+        self.assertEqual(0, ret)
+        mock_notify.assert_not_called()
+
     @patch('argparse.ArgumentParser.print_usage')
     def test_func_required_usage(self, mock_usage):
         self.assertRaises(SystemExit, ntfy_main, [])
@@ -184,7 +194,7 @@ class TestMain(TestCase):
 
 
 class ShellIntegrationTestCase(TestCase):
-    def test_shellintegration_printout(self):
+    def test_printout(self):
         args = MagicMock()
         args.longer_than = 1
         with OutputCapture() as output:
@@ -197,7 +207,7 @@ class ShellIntegrationTestCase(TestCase):
             escape('# eval "$(ntfy shell-integration)"'),
         ]).strip()), output.captured.strip())
 
-    def test_shellintegration_printout_bash(self):
+    def test_printout_bash(self):
         args = MagicMock()
         args.longer_than = 1
         args.shell = "bash"
@@ -212,7 +222,7 @@ class ShellIntegrationTestCase(TestCase):
             escape('# eval "$(ntfy shell-integration)"'),
         ]).strip()), output.captured.strip())
 
-    def test_shellintegration_printout_focused(self):
+    def test_printout_focused(self):
         args = MagicMock()
         args.longer_than = 1
         args.unfocused_only = False
@@ -225,22 +235,51 @@ class ShellIntegrationTestCase(TestCase):
             escape('# eval "$(ntfy shell-integration)"'),
         ]).strip()), output.captured.strip())
 
+    def test_printout_longer_than(self):
+        args = MagicMock()
+        args.longer_than = 0
+        args.unfocused_only = False
+        with OutputCapture() as output:
+            auto_done(args)
+        compare(StringComparison('\n'.join([
+            "source '.*/auto-ntfy-done.sh'",
+            escape("# To use ntfy's shell integration, run this and add it to your shell's rc file:"),  # noqa: E501
+            escape('# eval "$(ntfy shell-integration)"'),
+        ]).strip()), output.captured.strip())
+
 
 class TestWatchPID(TestCase):
     @patch('psutil.Process')
     def test_watch_pid(self, mock_process):
         mock_process.return_value.pid = 1
         mock_process.return_value.create_time.return_value = time()
-        mock_process.return_value.cmdline.return_value = ['cmd']
+        mock_process.return_value.cmdline.return_value = ['foo', 'bar']
+        mock_process.return_value.wait.return_value = 5
         args = MagicMock()
         args.pid = 1
         args.unfocused_only = False
         ret = run_cmd(args)
-        self.assertEqual('PID[1]: "cmd" finished in 0:00 minutes', ret[0])
+        self.assertEqual(('PID[1]: "foo bar" finished in 0:00 minutes', 5),
+                         ret)
 
-    def test_watch_bad_pid(self):
+    @patch('psutil.Process')
+    def test_watch_pid_race(self, mock_process):
+        mock_process.return_value.pid = 1
+        mock_process.return_value.create_time.return_value = time()
+        mock_process.return_value.cmdline.return_value = ['foo', 'bar']
+        mock_process.return_value.wait.side_effect = NoSuchProcess(1)
+        args = MagicMock()
+        args.pid = 1
+        args.unfocused_only = False
+        ret = run_cmd(args)
+        self.assertEqual(('PID[1]: "foo bar" finished in 0:00 minutes', None),
+                         ret)
+
+    @patch('psutil.Process', side_effect=NoSuchProcess(100000))
+    def test_watch_bad_pid(self, mock_process):
         args = MagicMock()
         args.pid = 100000
+        args.unfocused_only = False
         self.assertRaises(SystemExit, run_cmd, args)
 
 
