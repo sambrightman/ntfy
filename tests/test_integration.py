@@ -104,13 +104,8 @@ class TestIntegration(TestCase):
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
-    def test_instapush(self, mock_yamlload):
-        def nt(event_name=None,trackers=None):
-            return { 'status': 200 }
-
-        modules['instapush'] = MagicMock()
-        modules['instapush'].App.notify = nt
-
+    @patch('instapush.App.notify', return_value={'status': 200})
+    def test_instapush(self, mock_notify, mock_yamlload):
         mock_yamlload.return_value = {
             'backends': ['insta'],
             'insta': {
@@ -120,7 +115,12 @@ class TestIntegration(TestCase):
                 'trackers': ['a']
             }
         }
-        ntfy_main(['send', 'ms'])
+        ret = ntfy_main(['send', 'message'])
+        mock_notify.assert_called_with(
+            event_name='event',
+            trackers={'a': 'message'}
+        )
+        self.assertEqual(0, ret)
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
