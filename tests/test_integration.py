@@ -124,6 +124,15 @@ class TestIntegration(TestCase):
 
     @patch(builtin_module + '.open', mock_open())
     @patch('ntfy.config.yaml.load')
+    @patch('ntfy.backends.telegram.path.exists', return_value=True)
+    @patch('ntfy.backends.telegram.send')
+    def test_telegram(self, mock_send, mock_path_exists, mock_yamlload):
+        mock_yamlload.return_value = {'backends': ['telegram']}
+        ret = ntfy_main(['send', 'message'])
+        self.assertEqual(0, ret)
+
+    @patch(builtin_module + '.open', mock_open())
+    @patch('ntfy.config.yaml.load')
     @patch('ntfy.backends.pushover.requests.post')
     def test_title_config(self, mock_post, mock_yamlload):
         mock_yamlload.return_value = {
